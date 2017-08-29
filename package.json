@@ -1,0 +1,14 @@
+{
+  "name": "serverless-angular4-aws-cognito-starter",
+  "version": "1.0.0",
+  "description": "Provides a full login flow via AWS Cognito to an Angular4 website deployed using the serverless framework.",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "serverless-sync-s3buckets": "^1.0.1"
+  }
+}

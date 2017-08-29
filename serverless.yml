@@ -1,0 +1,131 @@
+# Serverless Angular4 AWS Cognito Starter
+#
+# The service provides a full login flow via AWS Cognito to an Angular4 website deployed
+# using the Serverless Framework.
+#
+service: serverless-angular4-aws-cognito-starter
+
+# Only deploy with a specific Serverless version
+frameworkVersion: ">=1.9.0 <2.0.0"
+
+plugins:
+  - serverless-sync-s3buckets
+
+# Global parameters used by cloudformation script
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  # Used by the serverless plugin to sync files to S3
+  syncS3Buckets:
+    - bucketRef: WebSite # The front-end website
+      localDir: static/dist
+  devCognitoPool: 'arn:aws:cognito-idp:us-east-1:352666835731:userpool/us-east-1_n0XIUer5V'
+  prodCognitoPool: ''
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+
+# packaging information for lambda functions
+package:
+  include:
+    - backend/**
+  exclude:
+    - resources/**
+    - static/**
+    - node_modules/**
+
+# AWS Lambda function fronted by AWS API Gateway
+functions:
+  messages:
+    handler: backend/handler.getMessage
+    events:
+    - http:
+        authorizer:
+          name: pool_auth
+          arn: '${self:custom.${self:custom.stage}CognitoPool}'
+        cors: true
+        path: /api/message
+        method: get
+
+# AWS Resources comprising the serverless architecture
+resources:
+  ## Utility yml files
+  Mappings: ${file(resources/mappings.yml)}
+  Outputs: ${file(resources/outputs.yml)}
+  Resources:
+    ## S3 bucket for the Angular front-end website
+    WebSite:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          ErrorDocument: index.html
+          IndexDocument: index.html
+    ## Specifying the policies to make sure all files inside the Bucket are available to CloudFront
+    WebSiteS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: WebSite
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+              - s3:GetObject
+              Resource: {"Fn::Join": ["", ["arn:aws:s3:::", {Ref: WebSite}, "/*"]]}
+    ## Specifying the CloudFront Distribution to server your Web Application
+    WebSiteCloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Origins:
+            - DomainName: {"Fn::Join": ["", [{Ref: WebSite}, ".", {"Fn::FindInMap": [RegionMap, {Ref: "AWS::Region"}, websiteendpoint]}]]}
+              ## An identifier for the origin which must be unique within the distribution
+              Id: S3Origin
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+              ## In case you want to restrict the bucket access use S3OriginConfig and remove CustomOriginConfig
+              # S3OriginConfig:
+              #   OriginAccessIdentity: origin-access-identity/cloudfront/E127EXAMPLE51Z
+          Enabled: 'true'
+          ## Uncomment the following section in case you are using a custom domain
+          # Aliases:
+          # - mysite.example.com
+          DefaultRootObject: index.html
+          ## Since the Single Page App is taking care of the routing we need to make sure ever path is served with index.html
+          ## The only exception are files that actually exist e.h. app.js, reset.css
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - DELETE
+              - GET
+              - HEAD
+              - OPTIONS
+              - PATCH
+              - POST
+              - PUT
+            ## The origin id defined above
+            TargetOriginId: S3Origin
+            ## Defining if and how the QueryString and Cookies are forwarded to the origin which in this case is S3
+            ForwardedValues:
+              QueryString: 'true'
+              Cookies:
+                Forward: all
+            ## The protocol that users can use to access the files in the origin. To allow HTTP use `allow-all`
+            ViewerProtocolPolicy: redirect-to-https
+          ## The certificate to use when viewers use HTTPS to request objects.
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: 'true'
+          ## Uncomment the following section in case you want to enable logging for CloudFront requests
+          # Logging:
+          #   IncludeCookies: 'false'
+          #   Bucket: mylogs.s3.amazonaws.com
+          #   Prefix: myprefix
+
