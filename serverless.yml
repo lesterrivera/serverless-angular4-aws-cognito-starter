@@ -18,7 +18,7 @@ custom:
   syncS3Buckets:
     - bucketRef: WebSite # The front-end website
       localDir: static/dist
-  devCognitoPool: 'arn:aws:cognito-idp:us-east-1:352666835731:userpool/us-east-1_n0XIUer5V'
+  devCognitoPool: ''
   prodCognitoPool: ''
 
 provider:

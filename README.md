@@ -37,7 +37,7 @@ AWS Cognito provides an authentication framework for mobile and web applications
 2. Set appropriate values fpr the AWS Cognito User Pool to the following in serverless.yml.
 
 ```$yml
-  devCognitoPool: 'arn:aws:cognito-idp:us-east-1:352666835731:userpool/us-east-1_n0XIUer5V'
+  devCognitoPool: ''
   prodCognitoPool: ''
 ```
 
