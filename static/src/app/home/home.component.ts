@@ -20,7 +20,7 @@ export class HomeComponent implements OnInit {
 
   private loadAllMessages() {
     this.messageService.getMessage()
-      .subscribe(messages => { this.messages = messages; });
+      .subscribe(result => { this.messages.push(result.message); });
   }
 
 }
