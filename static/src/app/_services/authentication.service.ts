@@ -43,16 +43,11 @@ export class AuthenticationService {
           reject('User needs to set password.')
         },
         onSuccess: function (result) {
-          let user = {
-            name: 'user',
-            token:''
-          };
 
           /* Use the idToken for Logins Map when Federating User Pools with Cognito Identity or
            * when passing through an Authorization Header to an API Gateway Authorizer
            */
-          user.token = result.getIdToken().getJwtToken();
-          localStorage.setItem('currentUser', JSON.stringify(user));
+          // let usertoken = result.getIdToken().getJwtToken();
 
           resolve(result);
         },
